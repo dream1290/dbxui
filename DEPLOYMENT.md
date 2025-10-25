@@ -2,7 +2,7 @@
 
 ## Backend API
 
-**Production URL:** `https://dbx.up.railway.app`
+**Production URL:** `https://dbx-system-production.up.railway.app`
 
 The backend is deployed on Railway and provides all API endpoints for the application.
 
@@ -12,13 +12,13 @@ The backend is deployed on Railway and provides all API endpoints for the applic
 
 1. Node.js 18+ installed
 2. npm or yarn package manager
-3. Backend API running at `https://dbx.up.railway.app`
+3. Backend API running at `https://dbx-system-production.up.railway.app`
 
 ### Environment Configuration
 
 1. **Create `.env` file** (already configured):
 ```env
-VITE_API_URL=https://dbx.up.railway.app
+VITE_API_URL=https://dbx-system-production.up.railway.app
 NODE_ENV=production
 ```
 

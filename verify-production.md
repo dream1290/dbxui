@@ -4,7 +4,7 @@
 
 ### 1. Environment Configuration ✅
 - [x] `.env` file created with production URL
-- [x] `VITE_API_URL=https://dbx.up.railway.app`
+- [x] `VITE_API_URL=https://dbx-system-production.up.railway.app`
 - [x] API service configured to use environment variable
 
 ### 2. Backend API Health Check
@@ -13,7 +13,7 @@ Test the backend is accessible:
 
 ```bash
 # Health check
-curl https://dbx.up.railway.app/health
+curl https://dbx-system-production.up.railway.app/health
 
 # Expected response: {"status": "healthy"} or similar
 ```
@@ -53,7 +53,7 @@ npm run preview
 ### API Integration
 - [ ] Open browser DevTools → Network tab
 - [ ] Navigate through application
-- [ ] Verify all API calls go to `https://dbx.up.railway.app`
+- [ ] Verify all API calls go to `https://dbx-system-production.up.railway.app`
 - [ ] Check for 200 status codes
 - [ ] Verify no CORS errors
 
@@ -256,7 +256,7 @@ If critical issues are found:
 **Deployed By:** _________________
 **Date:** _________________
 **Version:** _________________
-**Backend URL:** https://dbx.up.railway.app
+**Backend URL:** https://dbx-system-production.up.railway.app
 **Frontend URL:** _________________
 
 ---
@@ -265,7 +265,7 @@ If critical issues are found:
 
 ```bash
 # 1. Check backend health
-curl https://dbx.up.railway.app/health
+curl https://dbx-system-production.up.railway.app/health
 
 # 2. Build frontend
 npm run build

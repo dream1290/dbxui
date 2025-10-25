@@ -61,7 +61,7 @@ vercel --prod
 ```
 
 Set environment variable in Vercel dashboard:
-- `VITE_API_URL` = `https://dbx.up.railway.app`
+- `VITE_API_URL` = `https://dbx-system-production.up.railway.app`
 
 ### Option 2: Netlify
 
@@ -71,7 +71,7 @@ netlify deploy --prod --dir=dist
 ```
 
 Set environment variable in Netlify dashboard:
-- `VITE_API_URL` = `https://dbx.up.railway.app`
+- `VITE_API_URL` = `https://dbx-system-production.up.railway.app`
 
 ---
 
@@ -80,7 +80,7 @@ Set environment variable in Netlify dashboard:
 Create `.env` file:
 
 ```env
-VITE_API_URL=https://dbx.up.railway.app
+VITE_API_URL=https://dbx-system-production.up.railway.app
 ```
 
 ---
@@ -126,5 +126,5 @@ Check the documentation files or create an issue on GitHub.
 ---
 
 **Repository:** https://github.com/dream1290/dbx-ui
-**Backend:** https://dbx.up.railway.app
+**Backend:** https://dbx-system-production.up.railway.app
 **Author:** [@dream1290](https://github.com/dream1290)

@@ -168,4 +168,4 @@ Consider adding CI/CD workflows:
 ---
 
 **Repository:** https://github.com/dream1290/dbx-ui
-**Backend API:** https://dbx.up.railway.app
+**Backend API:** https://dbx-system-production.up.railway.app

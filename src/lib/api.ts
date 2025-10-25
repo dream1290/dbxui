@@ -1,11 +1,5 @@
 // API Configuration and Base Service
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-interface ApiResponse<T> {
-  data?: T;
-  error?: string;
-  message?: string;
-}
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://dbx-system-production.up.railway.app';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -23,15 +17,28 @@ class ApiService {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.token = localStorage.getItem('auth_token');
+    // Check for new token key first, then fall back to old key for migration
+    this.token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
     this.refreshToken = localStorage.getItem('refresh_token');
+    
+    // Migrate old token key if present
+    if (localStorage.getItem('auth_token') && !localStorage.getItem('access_token')) {
+      const oldToken = localStorage.getItem('auth_token');
+      if (oldToken) {
+        localStorage.setItem('access_token', oldToken);
+        localStorage.removeItem('auth_token');
+      }
+    }
   }
 
   setToken(token: string | null) {
     this.token = token;
     if (token) {
-      localStorage.setItem('auth_token', token);
+      localStorage.setItem('access_token', token);
+      // Remove old key if it exists
+      localStorage.removeItem('auth_token');
     } else {
+      localStorage.removeItem('access_token');
       localStorage.removeItem('auth_token');
     }
   }
@@ -46,6 +53,7 @@ class ApiService {
   }
 
   private async handleTokenRefresh(): Promise<string> {
+    // Prevent duplicate simultaneous refresh requests
     if (this.isRefreshing && this.refreshPromise) {
       return this.refreshPromise;
     }
@@ -57,21 +65,20 @@ class ApiService {
           throw new Error('No refresh token available');
         }
 
-        const response = await fetch(`${this.baseURL}/api/v2/auth/refresh`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.refreshToken}`,
-          },
-        });
+        // CRITICAL: Refresh token must be sent as query parameter, not in body or headers
+        const response = await fetch(
+          `${this.baseURL}/api/v2/auth/refresh?refresh_token=${this.refreshToken}`,
+          { method: 'POST' }
+        );
 
         if (!response.ok) {
           throw new Error('Token refresh failed');
         }
 
         const data = await response.json();
+        
+        // Update both access and refresh tokens
         this.setToken(data.access_token);
-
         if (data.refresh_token) {
           this.setRefreshToken(data.refresh_token);
         }
@@ -148,26 +155,52 @@ class ApiService {
 
   // Auth methods
   async login(email: string, password: string) {
-    const response = await this.request<{ access_token: string; refresh_token: string; user: any }>('/api/v2/auth/login', {
+    // CRITICAL: Login endpoint requires form-data with 'username' field (not JSON with 'email')
+    const formData = new URLSearchParams();
+    formData.append('username', email);  // Backend expects 'username' not 'email'
+    formData.append('password', password);
+
+    const response = await fetch(`${this.baseURL}/api/v2/auth/login`, {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData.toString(),
     });
 
-    // Store refresh token
-    if (response.refresh_token) {
-      this.setRefreshToken(response.refresh_token);
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: response.statusText }));
+      throw new ApiError(response.status, error.detail || `HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return response;
+    const data = await response.json();
+
+    // Store both tokens
+    this.setToken(data.access_token);
+    if (data.refresh_token) {
+      this.setRefreshToken(data.refresh_token);
+    }
+
+    return data;
   }
 
-  async register(email: string, password: string, name: string) {
-    const response = await this.request<{ access_token: string; refresh_token: string; user: any }>('/api/v2/auth/register', {
+  async register(email: string, password: string, fullName: string, organization?: string) {
+    // Generate unique organization name if not provided to avoid conflicts
+    const uniqueOrg = organization || `Org_${Date.now()}`;
+    
+    const response = await this.request<{ access_token: string; refresh_token: string }>('/api/v2/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({
+        email,
+        password,
+        full_name: fullName,  // Backend expects 'full_name' not 'name'
+        organization: uniqueOrg,
+        role: 'user'
+      }),
     });
 
-    // Store refresh token
+    // Store both tokens
+    this.setToken(response.access_token);
     if (response.refresh_token) {
       this.setRefreshToken(response.refresh_token);
     }
@@ -201,17 +234,31 @@ class ApiService {
   }
 
   async forgotPassword(email: string) {
-    return this.request('/api/v2/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
+    // Email must be sent as query parameter, not in body
+    const response = await fetch(
+      `${this.baseURL}/api/v2/auth/forgot-password?email=${encodeURIComponent(email)}`,
+      { method: 'POST' }
+    );
+
+    if (!response.ok) {
+      throw new ApiError(response.status, `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
   }
 
-  async resetPassword(token: string, password: string) {
-    return this.request('/api/v2/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify({ token, password }),
-    });
+  async resetPassword(token: string, newPassword: string) {
+    // Both token and password must be sent as query parameters, not in body
+    const response = await fetch(
+      `${this.baseURL}/api/v2/auth/reset-password?token=${token}&new_password=${encodeURIComponent(newPassword)}`,
+      { method: 'POST' }
+    );
+
+    if (!response.ok) {
+      throw new ApiError(response.status, `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    return await response.json();
   }
 
   // Users methods

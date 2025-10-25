@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (email: string, password: string, fullName: string, organization?: string) => Promise<void>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => Promise<void>;
   isAuthenticated: boolean;
@@ -64,16 +64,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      // Check for new token key first, then fall back to old key for migration
+      const token = localStorage.getItem('access_token') || localStorage.getItem('auth_token');
       if (token) {
         apiService.setToken(token);
         const userData = await apiService.getProfile();
         setUser(userData);
+        
+        // Migrate old token key if present
+        if (localStorage.getItem('auth_token')) {
+          localStorage.removeItem('auth_token');
+          localStorage.setItem('access_token', token);
+        }
       }
     } catch (error) {
       console.error('Auth check failed:', error);
       // Clear auth data on failure
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
       apiService.setToken(null);
       setUser(null);
     } finally {
@@ -83,44 +92,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await apiService.login(email, password);
-      apiService.setToken(response.access_token);
-      setUser(response.user);
+      // Login returns only tokens, not user data
+      await apiService.login(email, password);
+      
+      // Tokens are already stored by apiService.login()
+      // Now fetch user profile separately
+      const userData = await apiService.getProfile();
+      setUser(userData);
       
       // Set profile in React Query cache
-      queryClient.setQueryData(['profile'], response.user);
+      queryClient.setQueryData(['profile'], userData);
       
       toast({
         title: "Login successful",
         description: "Welcome back!",
       });
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = "Invalid credentials";
+      
+      // Handle specific error status codes
+      if (error.status === 401) {
+        errorMessage = "Invalid email or password";
+      } else if (error.status === 403) {
+        errorMessage = "Your account has been disabled. Please contact support.";
+      } else if (error.status === 422) {
+        errorMessage = "Invalid request format";
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "Invalid credentials",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
     }
   };
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = async (email: string, password: string, fullName: string, organization?: string) => {
     try {
-      const response = await apiService.register(email, password, name);
-      apiService.setToken(response.access_token);
-      setUser(response.user);
+      // Register returns only tokens, not user data
+      await apiService.register(email, password, fullName, organization);
+      
+      // Tokens are already stored by apiService.register()
+      // Now fetch user profile separately
+      const userData = await apiService.getProfile();
+      setUser(userData);
       
       // Set profile in React Query cache
-      queryClient.setQueryData(['profile'], response.user);
+      queryClient.setQueryData(['profile'], userData);
       
       toast({
         title: "Registration successful",
         description: "Your account has been created!",
       });
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = "Registration failed";
+      
+      // Handle specific error status codes
+      if (error.status === 400) {
+        errorMessage = "This email is already registered";
+      } else if (error.status === 422) {
+        errorMessage = "Please check your information and try again";
+      } else if (error.status === 500) {
+        errorMessage = "Organization name conflict. Please try again.";
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "Registration failed",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;

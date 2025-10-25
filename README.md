@@ -12,7 +12,7 @@ A modern, production-ready aviation analytics platform with AI-powered flight an
 ## 🚀 Live Demo
 
 - **Frontend:** [Deploy to Vercel/Netlify]
-- **Backend API:** https://dbx.up.railway.app
+- **Backend API:** https://dbx-system-production.up.railway.app
 - **GitHub:** https://github.com/dream1290/dbx-ui
 
 ## ✨ Features
@@ -102,12 +102,12 @@ Create a `.env` file in the root directory with the following variables:
 VITE_API_URL=http://localhost:8000
 
 # Production
-VITE_API_URL=https://dbx.up.railway.app
+VITE_API_URL=https://dbx-system-production.up.railway.app
 ```
 
 - `VITE_API_URL`: The base URL of your backend API
   - Development: `http://localhost:8000`
-  - Production: `https://dbx.up.railway.app`
+  - Production: `https://dbx-system-production.up.railway.app`
 
 ### API Requirements
 
@@ -202,7 +202,7 @@ The application uses React Query with the following caching configuration:
 #### API Connection Issues
 
 If you see "Network error" messages:
-1. Verify the backend API is running
+1. Verify the backend API is running at https://dbx-system-production.up.railway.app
 2. Check the `VITE_API_URL` environment variable
 3. Ensure CORS is properly configured on the backend
 4. Check browser console for detailed error messages
