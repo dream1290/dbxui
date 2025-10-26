@@ -156,7 +156,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else if (error.status === 422) {
         errorMessage = "Please check your information and try again";
       } else if (error.status === 500) {
-        errorMessage = "Organization name conflict. Please try again.";
+        // Check if it's an organization conflict error
+        if (error.message && error.message.includes('organization')) {
+          errorMessage = "Registration error. Please try again.";
+        } else {
+          errorMessage = "Server error. Please try again later.";
+        }
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }

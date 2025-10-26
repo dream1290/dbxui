@@ -185,8 +185,10 @@ class ApiService {
   }
 
   async register(email: string, password: string, fullName: string, organization?: string) {
-    // Generate unique organization name if not provided to avoid conflicts
-    const uniqueOrg = organization || `Org_${Date.now()}`;
+    // Generate unique organization name with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 7);
+    const uniqueOrg = organization ? `${organization}_${timestamp}_${randomSuffix}` : `Organization_${timestamp}_${randomSuffix}`;
     
     const response = await this.request<{ access_token: string; refresh_token: string }>('/api/v2/auth/register', {
       method: 'POST',
@@ -194,8 +196,7 @@ class ApiService {
         email,
         password,
         full_name: fullName,  // Backend expects 'full_name' not 'name'
-        organization: uniqueOrg,
-        role: 'user'
+        organization: uniqueOrg
       }),
     });
 
