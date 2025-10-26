@@ -14,8 +14,9 @@ import heroImage from "@/assets/hero-aviation.jpg";
 const Index = () => {
   const navigate = useNavigate();
   
-  const { data: metrics, isLoading: metricsLoading, error: metricsError, refetch: refetchMetrics } = useSystemMetrics({ autoRefresh: true });
-  const { data: flights, isLoading: flightsLoading, error: flightsError, refetch: refetchFlights } = useFlights({ limit: 3, autoRefresh: true });
+  // Use retry: false and enabled: true to prevent blocking the dashboard on API errors
+  const { data: metrics, isLoading: metricsLoading, error: metricsError, refetch: refetchMetrics } = useSystemMetrics({ autoRefresh: false });
+  const { data: flights, isLoading: flightsLoading, error: flightsError, refetch: refetchFlights } = useFlights({ limit: 3, autoRefresh: false });
   const { data: aircraft, isLoading: aircraftLoading } = useAircraft();
 
   const stats = [

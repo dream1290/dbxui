@@ -14,6 +14,8 @@ export const useSystemMetrics = (options?: { autoRefresh?: boolean }) => {
     queryKey: ['system', 'metrics'],
     queryFn: () => apiService.getSystemMetrics(),
     refetchInterval: options?.autoRefresh ? 30 * 1000 : false, // 30 seconds
+    retry: false, // Don't retry on failure
+    throwOnError: false, // Don't throw errors, just return them
   });
 };
 
