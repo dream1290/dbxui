@@ -3,8 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { Button } from "@/components/ui/button";
-import { Bell, User, Search } from "lucide-react";
+import { Bell, User, Search, LogOut } from "lucide-react";
 import { useNotifications } from "@/hooks/api/useNotifications";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -12,8 +21,23 @@ interface MainLayoutProps {
 
 export function MainLayout({ children }: MainLayoutProps) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const { data: notifications } = useNotifications({ autoRefresh: true });
   const unreadCount = notifications?.filter((n: any) => !n.read).length || 0;
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Toast notification is already handled by AuthContext
+    }
+  };
+
+  const handleProfile = () => {
+    navigate('/profile');
+  };
 
   return (
     <SidebarProvider>
@@ -58,14 +82,26 @@ export function MainLayout({ children }: MainLayoutProps) {
                   )}
                 </Button>
 
-                {/* User Profile */}
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={() => navigate('/profile')}
-                >
-                  <User className="h-5 w-5" />
-                </Button>
+                {/* User Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleProfile}>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </header>
