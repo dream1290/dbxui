@@ -9,12 +9,13 @@ export const useSystemStatus = (options?: { autoRefresh?: boolean }) => {
   });
 };
 
-export const useSystemMetrics = (options?: { autoRefresh?: boolean }) => {
+export const useSystemMetrics = (options?: { autoRefresh?: boolean; retry?: boolean; enabled?: boolean }) => {
   return useQuery({
     queryKey: ['system', 'metrics'],
     queryFn: () => apiService.getSystemMetrics(),
     refetchInterval: options?.autoRefresh ? 30 * 1000 : false, // 30 seconds
-    retry: false, // Don't retry on failure
+    retry: options?.retry ?? false, // Don't retry on failure by default
+    enabled: options?.enabled ?? true,
     throwOnError: false, // Don't throw errors, just return them
   });
 };

@@ -2,10 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiService } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
-export const useAircraft = () => {
+export const useAircraft = (options?: { retry?: boolean; enabled?: boolean }) => {
   return useQuery({
     queryKey: ['aircraft'],
     queryFn: () => apiService.getAircraft(),
+    retry: options?.retry ?? false, // Don't retry on failure by default
+    enabled: options?.enabled ?? true,
+    throwOnError: false, // Don't throw errors, just return them
   });
 };
 
@@ -22,6 +25,8 @@ export const useAircraftTypes = () => {
     queryKey: ['aircraft-types'],
     queryFn: () => apiService.getAircraftTypes(),
     staleTime: 10 * 60 * 1000, // 10 minutes - types don't change often
+    retry: false, // Don't retry on failure
+    throwOnError: false, // Don't throw errors, just return them
   });
 };
 

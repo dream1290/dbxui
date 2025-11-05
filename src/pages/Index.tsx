@@ -14,46 +14,114 @@ import heroImage from "@/assets/hero-aviation.jpg";
 const Index = () => {
   const navigate = useNavigate();
   
-  // Use retry: false and enabled: true to prevent blocking the dashboard on API errors
-  const { data: metrics, isLoading: metricsLoading, error: metricsError, refetch: refetchMetrics } = useSystemMetrics({ autoRefresh: false });
-  const { data: flights, isLoading: flightsLoading, error: flightsError, refetch: refetchFlights } = useFlights({ limit: 3, autoRefresh: false });
-  const { data: aircraft, isLoading: aircraftLoading } = useAircraft();
+  // Use retry: false to prevent blocking the dashboard on API errors
+  // Set enabled: true but handle errors gracefully
+  const { data: metrics, isLoading: metricsLoading, error: metricsError, refetch: refetchMetrics } = useSystemMetrics({ 
+    autoRefresh: false,
+    retry: false,
+    enabled: true
+  });
+  const { data: flights, isLoading: flightsLoading, error: flightsError, refetch: refetchFlights } = useFlights({ 
+    limit: 3, 
+    autoRefresh: false,
+    retry: false,
+    enabled: true
+  });
+  const { data: aircraft, isLoading: aircraftLoading, error: aircraftError } = useAircraft({
+    retry: false,
+    enabled: true
+  });
+
+  // Debug logging to help troubleshoot
+  console.log('Dashboard Debug Info:', {
+    metrics: { data: metrics, loading: metricsLoading, error: metricsError?.message },
+    flights: { data: flights, loading: flightsLoading, error: flightsError?.message },
+    aircraft: { data: aircraft, loading: aircraftLoading, error: aircraftError?.message }
+  });
 
   const stats = [
     { 
       title: "Active Flights", 
-      value: metrics?.active_flights || "0", 
+      value: String(metrics?.active_flights ?? 0), 
       change: metrics?.active_flights_change || "+0%", 
       icon: Activity,
       type: "multirotor"
     },
     { 
       title: "Analyses Complete", 
-      value: metrics?.total_analyses || "0", 
+      value: String(metrics?.total_analyses ?? 0), 
       change: metrics?.analyses_change || "+0%", 
       icon: TrendingUp,
       type: "fixed-wing"
     },
     { 
       title: "Risk Alerts", 
-      value: metrics?.risk_alerts || "0", 
+      value: String(metrics?.risk_alerts ?? 0), 
       change: metrics?.alerts_change || "0%", 
       icon: AlertTriangle,
       type: "high"
     },
     { 
       title: "Fleet Health", 
-      value: metrics?.fleet_health ? `${metrics.fleet_health}%` : "0%", 
+      value: metrics?.fleet_health ? `${metrics.fleet_health}%` : "100%", 
       change: metrics?.fleet_health_change || "+0%", 
       icon: Plane,
       type: "low"
     },
   ];
 
-  const recentAnalyses = flights?.slice(0, 3) || [];
+  const recentAnalyses = Array.isArray(flights) ? flights.slice(0, 3) : [];
+
+  // Show overall loading state
+  const isLoadingAny = metricsLoading || flightsLoading || aircraftLoading;
+  const hasAnyError = metricsError || flightsError || aircraftError;
 
   return (
     <div className="space-y-8 p-6">
+      {/* Debug Banner - Shows loading/error state */}
+      {isLoadingAny && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex items-center gap-3">
+            <Activity className="h-5 w-5 animate-spin text-blue-600" />
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Loading dashboard data...</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                {metricsLoading && 'Fetching system metrics... '}
+                {flightsLoading && 'Loading flight analyses... '}
+                {aircraftLoading && 'Retrieving aircraft data...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Error Banner - Shows if any API calls failed */}
+      {hasAnyError && !isLoadingAny && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <div>
+                <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">Some data could not be loaded</p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                  The dashboard is showing default or cached values. Check your connection or try refreshing.
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                refetchMetrics();
+                refetchFlights();
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {/* Hero Section */}
       <div className="relative overflow-hidden rounded-2xl">
         <div 
@@ -90,11 +158,12 @@ const Index = () => {
       </div>
 
       {/* Key Metrics Grid */}
-      {metricsError && (
-        <ErrorState 
-          message={metricsError.message} 
-          onRetry={refetchMetrics}
-        />
+      {metricsError && !metricsLoading && (
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            ⚠️ Some metrics may be unavailable. Showing default values.
+          </p>
+        </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {metricsLoading ? (
@@ -134,11 +203,12 @@ const Index = () => {
             badge="Live Updates"
             badgeVariant="low"
           >
-            {flightsError && (
-              <ErrorState 
-                message={flightsError.message} 
-                onRetry={refetchFlights}
-              />
+            {flightsError && !flightsLoading && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  ℹ️ Flight analysis data is not available yet. Upload flight data to see analyses here.
+                </p>
+              </div>
             )}
             <div className="space-y-4">
               {flightsLoading ? (
@@ -148,8 +218,19 @@ const Index = () => {
                   <FlightCardSkeleton />
                 </>
               ) : recentAnalyses.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  No recent analyses found
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground mb-2">No flight analyses yet</p>
+                  <p className="text-sm text-muted-foreground/70 mb-4">
+                    Upload flight data to start analyzing
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate("/upload")}
+                  >
+                    Upload Flight Data
+                  </Button>
                 </div>
               ) : (
                 recentAnalyses.map((analysis: any) => (
@@ -236,7 +317,7 @@ const Index = () => {
           <GenomicCard 
             title="Fleet Overview"
             icon={<Plane className="h-5 w-5" />}
-            badge={`${aircraft?.filter((a: any) => a.status === 'active').length || 0} Active`}
+            badge={`${Array.isArray(aircraft) ? aircraft.filter((a: any) => a.operational_status === 'active').length : 0} Active`}
             badgeVariant="fixed-wing"
           >
             <div className="space-y-3">
@@ -246,30 +327,53 @@ const Index = () => {
                   <div className="h-4 w-full bg-muted animate-pulse rounded" />
                   <div className="h-4 w-full bg-muted animate-pulse rounded" />
                 </>
+              ) : aircraftError ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-muted-foreground mb-2">Fleet data unavailable</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate("/fleet")}
+                  >
+                    Manage Fleet
+                  </Button>
+                </div>
+              ) : !Array.isArray(aircraft) || aircraft.length === 0 ? (
+                <div className="text-center py-4">
+                  <Plane className="h-10 w-10 mx-auto text-muted-foreground/50 mb-2" />
+                  <p className="text-sm text-muted-foreground mb-2">No aircraft registered</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate("/fleet")}
+                  >
+                    Add Aircraft
+                  </Button>
+                </div>
               ) : (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Multirotors</span>
                     <span className="text-multirotor font-medium">
-                      {aircraft?.filter((a: any) => a.type === 'Multirotor').length || 0}
+                      {aircraft.filter((a: any) => a.aircraft_type === 'multirotor' || a.type === 'Multirotor').length}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Fixed Wing</span>
                     <span className="text-fixed-wing font-medium">
-                      {aircraft?.filter((a: any) => a.type === 'Fixed Wing').length || 0}
+                      {aircraft.filter((a: any) => a.aircraft_type === 'fixed_wing' || a.type === 'Fixed Wing').length}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">VTOL</span>
                     <span className="text-vtol font-medium">
-                      {aircraft?.filter((a: any) => a.type === 'VTOL').length || 0}
+                      {aircraft.filter((a: any) => a.aircraft_type === 'vtol' || a.type === 'VTOL').length}
                     </span>
                   </div>
                   <div className="pt-2 border-t border-border/30">
                     <ConservationScore 
                       label="Fleet Availability"
-                      score={metrics?.fleet_availability || 0}
+                      score={metrics?.fleet_availability || 100}
                       variant="accent"
                     />
                   </div>

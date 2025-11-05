@@ -11,12 +11,13 @@ import { useToast } from '@/hooks/use-toast';
  * @example
  * const { data: flights, isLoading, error } = useFlights({ autoRefresh: true });
  */
-export const useFlights = (options?: { limit?: number; autoRefresh?: boolean }) => {
+export const useFlights = (options?: { limit?: number; autoRefresh?: boolean; retry?: boolean; enabled?: boolean }) => {
   return useQuery({
     queryKey: ['flights', options],
     queryFn: () => apiService.getAnalyses(),
     refetchInterval: options?.autoRefresh ? 30 * 1000 : false, // 30 seconds
-    retry: false, // Don't retry on failure
+    retry: options?.retry ?? false, // Don't retry on failure by default
+    enabled: options?.enabled ?? true,
     throwOnError: false, // Don't throw errors, just return them
   });
 };
