@@ -171,15 +171,3 @@ If the app feels slow:
 2. Verify the backend API response times
 3. Check React Query DevTools for excessive refetching
 4. Consider increasing `staleTime` for less frequently changing data
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/b07ab2d7-8073-4b32-aada-3faca79e1b62) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
