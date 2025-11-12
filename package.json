@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "postinstall": "chmod +x node_modules/.bin/* || true",
     "test:api": "tsx tests/run-tests.ts",
     "test:api:verbose": "tsx tests/run-tests.ts --verbose",
     "test:api:no-cleanup": "tsx tests/run-tests.ts --no-cleanup"
